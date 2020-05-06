@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:news_app/bloc/my_music_player_bloc.dart';
 import 'package:news_app/models/Song.dart';
 import 'package:news_app/pages/player_page.dart';
@@ -25,7 +26,7 @@ class MyHomePage extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text("PLAYER".toUpperCase()),
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         titleSpacing: 1,
@@ -44,7 +45,9 @@ class MyHomePage extends StatelessWidget {
                     child: Container(
                       padding: EdgeInsets.all(8),
                       child: RoundIconButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          playerBLoc.goBack();
+                        },
                         icon: Icons.skip_previous,
                       ),
                     ),
@@ -52,63 +55,73 @@ class MyHomePage extends StatelessWidget {
                   // hero image
                   Expanded(
                     flex: 3,
-                    child: Hero(
-                      tag: "cover_image",
-                      child: GestureDetector(
-                        onTap: () async {
-                          if (playerBLoc.selectedSong != null) {
-                            int seekTime = await playerBLoc.getSeek();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) {
-                                  return PlayerPage(
-                                    seek: seekTime,
+                    child: playerBLoc.selectedSong != null
+                        ? Hero(
+                            tag: "cover_image",
+                            child: GestureDetector(
+                              onTap: () async {
+                                if (playerBLoc.selectedSong != null) {
+                                  int seekTime = await playerBLoc.getSeek();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) {
+                                        return PlayerPage(
+                                          seek: seekTime,
+                                        );
+                                      },
+                                    ),
                                   );
-                                },
-                              ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.orange,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.orange[700],
-                                blurRadius:
-                                    20.0, // has the effect of softening the shadow
-                                spreadRadius:
-                                    1.0, // has the effect of extending the shadow
-                                offset: Offset(
-                                  1.0, // horizontal, move right 10
-                                  1.0, // vertical, move down 10
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.orange,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.orange[700],
+                                      blurRadius:
+                                          20.0, // has the effect of softening the shadow
+                                      spreadRadius:
+                                          1.0, // has the effect of extending the shadow
+                                      offset: Offset(
+                                        1.0, // horizontal, move right 10
+                                        1.0, // vertical, move down 10
+                                      ),
+                                    )
+                                  ],
+                                  image: playerBLoc.selectedSong == null
+                                      ? null
+                                      : playerBLoc.selectedSong.albumArtwork !=
+                                              null
+                                          ? DecorationImage(
+                                              image: FileImage(
+                                                File(playerBLoc
+                                                    .selectedSong.albumArtwork),
+                                              ),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : null,
                                 ),
-                              )
-                            ],
-                            image: playerBLoc.selectedSong == null
-                                ? null
-                                : playerBLoc.selectedSong.albumArtwork != null
-                                    ? DecorationImage(
-                                        image: FileImage(
-                                          File(playerBLoc
-                                              .selectedSong.albumArtwork),
-                                        ),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
+                              ),
+                            ),
+                          )
+                        : SpinKitRipple(
+                            color: Colors.orange,
+                            size: 220,
+                            borderWidth: 20,
+                            duration: Duration(seconds: 2),
                           ),
-                        ),
-                      ),
-                    ),
                   ),
                   // forwar
                   Expanded(
                     child: Container(
                       padding: EdgeInsets.all(8),
                       child: RoundIconButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          playerBLoc.goNext();
+                        },
                         icon: Icons.skip_next,
                       ),
                     ),
@@ -137,7 +150,6 @@ class MyHomePage extends StatelessWidget {
                   onPlayPress: (String itemId) {
                     SongInfo userSelect = playerBLoc.songs
                         .firstWhere((element) => element.id == itemId);
-                    print(userSelect);
                     playerBLoc.playPause(userSelect);
                   },
                 ),

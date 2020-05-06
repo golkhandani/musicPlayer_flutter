@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
@@ -33,22 +35,32 @@ class MyMusicPlayerBLoc with ChangeNotifier {
     notifyListeners();
   }
 
-  int _selectedSongSeek;
+  int _selectedSongSeek = 0;
 
   int get selectedSongSeek => _selectedSongSeek;
 
   set selectedSongSeek(int selectedSongSeek) {
     _selectedSongSeek = selectedSongSeek;
-    if (_selectedSongSeek > int.parse(selectedSong.duration)) {
-      selectedSong = songs[songs.indexOf(selectedSong) + 1];
-      _selectedSongSeek = 0;
-    }
     notifyListeners();
   }
 
   Future<void> getAllFiles() async {
     songs = await audioQuery.getSongs();
     print("GET ALL FILES");
+  }
+
+  goNext() {
+    _timer.cancel();
+    selectedSong = songs[songs.indexOf(selectedSong) + 1];
+    selectedSongSeek = 0;
+    play();
+  }
+
+  goBack() {
+    _timer.cancel();
+    selectedSong = songs[songs.indexOf(selectedSong) - 1];
+    selectedSongSeek = 0;
+    play();
   }
 
   playPause(SongInfo song) {
@@ -62,12 +74,33 @@ class MyMusicPlayerBLoc with ChangeNotifier {
     }
   }
 
+  int timeTest = 0;
+  Timer _timer;
   play() async {
     if (selectedSong != null) {
-      int result = await audioPlayer.play(selectedSong.filePath, isLocal: true);
-      print(result);
+      if (_timer != null) {
+        _timer.cancel();
+      }
+      const oneSec = const Duration(seconds: 1);
+      _timer = Timer.periodic(oneSec, (Timer timer) {
+        if (int.tryParse(selectedSong.duration) - selectedSongSeek < 1000) {
+          timer.cancel();
+          selectedSong = songs[songs.indexOf(selectedSong) + 1];
+          selectedSongSeek = 0;
+          play();
+        } else {
+          selectedSongSeek += 1000;
+        }
+      });
+      await audioPlayer.play(selectedSong.filePath, isLocal: true);
       playerStatus = PlayerStatus.play;
     }
+  }
+
+  pause() async {
+    await audioPlayer.pause();
+    _timer.cancel();
+    playerStatus = PlayerStatus.pause;
   }
 
   Future<int> seek(int seekTime) async {
@@ -76,20 +109,19 @@ class MyMusicPlayerBLoc with ChangeNotifier {
     return result;
   }
 
-  pause() async {
-    int result = await audioPlayer.pause();
-    print(result);
-    playerStatus = PlayerStatus.pause;
-  }
-
   stop() async {
     await audioPlayer.stop();
     playerStatus = PlayerStatus.stop;
   }
 
   Future<int> getSeek() async {
-    int currentPosition = await audioPlayer.getCurrentPosition();
-    selectedSongSeek = currentPosition;
-    return currentPosition;
+    if (audioPlayer != null) {
+      int currentPosition = await audioPlayer.getCurrentPosition();
+      selectedSongSeek = currentPosition;
+      return currentPosition;
+    } else {
+      selectedSongSeek = 0;
+      return 0;
+    }
   }
 }

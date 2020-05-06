@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 
 class Loading extends StatelessWidget {
   Future<void> getArchiveAndNavigate(context, playerBLoc) async {
-    print("DA");
     await playerBLoc.getAllFiles();
     //await playerBLoc.stop();
     Timer(Duration(seconds: 2), () {
